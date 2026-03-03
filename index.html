@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's for dinner?!</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="wfd.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Dinner?!">
+    <link rel="apple-touch-icon" href="wfd.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --surface-color: #ffffff;
+            --text-color: #333333;
+            --primary-color: #2c3e50;
+            --secondary-color: #e0e4e8;
+            --border-color: #dddddd;
+            --danger-color: #e74c3c;
+            --base-font-size: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --surface-color: #2d2d2d;
+            --text-color: #f4f4f9;
+            --primary-color: #4da6ff;
+            --secondary-color: #3a3a3a;
+            --border-color: #444444;
+            --danger-color: #ff6b6b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: var(--base-font-size);
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- Header & Navigation --- */
+        #app-header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: none;
+        }
+
+        .top-bar {
+            padding: 10px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        /* Fixed Background Image Logo */
+        .app-logo {
+            width: 28px;
+            height: 28px;
+            margin-right: 10px;
+            background-image: url('wfd.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: filter 0.3s;
+        }
+
+        /* Invert the black logo so it shows up on dark mode */
+        [data-theme="dark"] .app-logo {
+            filter: invert(1) brightness(2);
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 1;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(128, 128, 128, 0.1);
+        }
+
+        .icon-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .nav-menu {
+            display: flex;
+            justify-content: flex-start;
+            overflow-x: auto;
+            white-space: nowrap;
+            background-color: var(--primary-color);
+            padding: 0;
+            margin: 0;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-menu button {
+            background: none;
+            border: none;
+            color: var(--bg-color);
+            padding: 15px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .nav-menu button:hover,
+        .nav-menu button.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (min-width: 600px) {
+            .nav-menu {
+                justify-content: center;
+            }
+        }
+
+        /* --- Layout & Cards --- */
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .sub-card {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--bg-color);
+        }
+
+        .sub-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        /* --- Inputs & Buttons --- */
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: #fff;
+        }
+
+        .row-buttons,
+        .dashboard-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* --- Lists & Action Buttons --- */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-color);
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        .search-bar input {
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .list-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: 10px;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item span {
+            flex: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            min-width: 0;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            width: auto;
+        }
+
+        .action-btns button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            flex: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-icon {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Base mobile-only hides (shown via media query below) */
+        .mobile-only {
+            display: none !important;
+        }
+
+        /* Contextual visibility for the shopping list items on mobile */
+        #col-master .sl-mobile-controls {
+            display: none !important;
+        }
+
+        #col-shopping .sl-mobile-add {
+            display: none !important;
+        }
+
+        /* ========================================================
+           MOBILE RESPONSIVENESS (iPhone XR, etc.)
+           The Bulletproof Fix: Stack elements to avoid box overflow
+           ======================================================== */
+        @media (max-width: 599px) {
+            .mobile-only {
+                display: flex !important;
+            }
+
+            .desktop-only {
+                display: none !important;
+            }
+
+            /* Stack the item text and buttons vertically so they NEVER overflow out of the box */
+            .list-item,
+            .draggable-item {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px;
+                padding: 15px 10px;
+                /* larger touch target space */
+            }
+
+            /* Force text to take full width */
+            .list-item span,
+            .draggable-item>span {
+                width: 100%;
+                margin-right: 0 !important;
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+
+            /* Buttons fill the bottom row */
+            .action-btns {
+                width: 100%;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            /* Make buttons evenly stretch across the row */
+            .action-btns button {
+                flex: 1;
+                padding: 10px 5px !important;
+                font-size: 0.9rem !important;
+                min-height: 44px;
+                /* Apple's recommended mobile touch size */
+                min-width: 0 !important;
+            }
+
+            /* Because buttons are on their own line now, we have plenty of room for the text! */
+            .action-btns .hide-mobile {
+                display: inline-block !important;
+                margin-left: 6px;
+            }
+
+            .action-icon {
+                margin-right: 2px;
+            }
+        }
+
+        @media (min-width: 600px) {
+            .hide-mobile {
+                display: inline-block;
+            }
+
+            .action-icon {
+                margin-right: 6px;
+            }
+        }
+
+        /* --- Drag & Drop --- */
+        .dnd-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dnd-column {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 10px;
+            min-height: 300px;
+        }
+
+        .dnd-column h3 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .draggable-item {
+            background-color: var(--surface-color);
+            padding: 15px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            touch-action: none;
+        }
+
+        .drag-over {
+            border: 2px dashed var(--primary-color) !important;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- Weekly Menu --- */
+        .week-nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--secondary-color);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .week-nav-bar h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            text-align: center;
+            flex: 1;
+            color: var(--text-color);
+            line-height: 1.4;
+        }
+
+        .week-nav-bar button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .day-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .day-row label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .day-row input {
+            flex: 1;
+            margin: 0;
+        }
+
+        /* --- Custom Modals --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            padding: 25px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .spam-warning {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #d39e00;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            text-align: left;
+        }
+
+        [data-theme="dark"] .spam-warning {
+            color: #ffca2c;
+        }
+
+        /* --- Desktop Scaling --- */
+        @media (min-width: 600px) {
+
+            .row-buttons,
+            .dashboard-buttons {
+                flex-direction: row;
+            }
+
+            .btn {
+                width: auto;
+                flex: 1;
+            }
+
+            .dnd-container {
+                flex-direction: row;
+            }
+
+            .day-row {
+                flex-direction: row;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+
+            .day-row label {
+                width: 100px;
+                margin-bottom: 0;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="custom-dialog-modal" class="modal-overlay hidden" style="z-index: 3000;">
+        <div class="modal-content">
+            <h3 id="dialog-title" style="margin-top:0;">Notification</h3>
+            <p id="dialog-message" style="font-size:0.95rem; margin-bottom: 15px; color: var(--text-color);"></p>
+            <input type="text" id="dialog-input" class="form-input hidden">
+            <div class="row-buttons" style="margin-top:20px;">
+                <button class="btn btn-secondary hidden" id="dialog-cancel">Cancel</button>
+                <button class="btn" id="dialog-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="email-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Send to Email</h3>
+            <p style="font-size:0.9rem; color:gray; margin-bottom: 15px;">Select an email address to send this list to.
+            </p>
+            <div class="spam-warning"><strong>⚠️ Note:</strong> If you don't receive this email to your inbox, please
+                check your Spam or Junk folder.</div>
+            <select id="email-select" class="form-input"></select>
+            <div class="row-buttons">
+                <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+                <button class="btn" onclick="sendEmail()">Send List</button>
+            </div>
+        </div>
+    </div>
+
+    <header id="app-header">
+        <div class="top-bar">
+            <div class="logo">
+                <div class="app-logo"></div>
+                What's for dinner?!
+            </div>
+            <div class="top-controls">
+                <button class="icon-btn" onclick="changeTextSize(-1)">A-</button>
+                <button class="icon-btn" onclick="changeTextSize(1)">A+</button>
+                <button class="icon-btn" onclick="toggleTheme()" id="theme-toggle">
+                    <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+                </button>
+                <button class="icon-btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+            </div>
+        </div>
+        <nav class="nav-menu" id="main-nav">
+            <button onclick="navigateTo('dashboard')" id="nav-dashboard">Dashboard</button>
+            <button onclick="navigateTo('master-list')" id="nav-master-list">Master List</button>
+            <button onclick="navigateTo('shopping-list')" id="nav-shopping-list">Shopping List</button>
+            <button onclick="navigateTo('weekly-menu')" id="nav-weekly-menu">Weekly Menu</button>
+            <button onclick="navigateTo('system')" id="nav-system">System</button>
+        </nav>
+    </header>
+
+    <div class="container" id="app-content">
+
+        <div id="view-login" class="card" style="max-width: 400px; margin: 5vh auto; text-align: center;">
+            <div style="display:flex; justify-content:center; margin-bottom: 20px;">
+                <div class="app-logo" style="width: 70px; height: 70px; margin:0;"></div>
+            </div>
+            <h2 style="margin-top:0;">Welcome Back</h2>
+            <p id="login-error" style="color: var(--danger-color); display:none; font-size: 0.9rem;">Incorrect details.
+                Please try again.</p>
+            <input type="text" id="login-user" class="form-input" placeholder="Username" value="admin">
+            <input type="password" id="login-pass" class="form-input" placeholder="Password" value="password123">
+            <button class="btn" onclick="login()">Log In</button>
+        </div>
+
+        <div id="view-dashboard" class="card hidden">
+            <h2>Dashboard</h2>
+            <div class="dashboard-buttons">
+                <button class="btn" onclick="navigateTo('shopping-list')">View Shopping List</button>
+                <button class="btn" onclick="navigateTo('weekly-menu')">This Weeks Menu</button>
+            </div>
+        </div>
+
+        <div id="view-master-list" class="card hidden">
+            <h2>Master List</h2>
+            <div class="row-buttons" style="align-items: center; margin-bottom: 15px; flex-direction: row;">
+                <div class="search-bar" style="flex: 1; margin-bottom: 0;">
+                    <input type="text" id="master-input" onkeyup="filterMasterList()" placeholder="Search or add new item...">
+                </div>
+                <button class="btn" onclick="addMasterItem()" style="flex: none; width: auto; min-width: 90px; margin-bottom: 0;">Add</button>
+            </div>
+            <ul id="master-ul" style="list-style:none; padding:0; margin:0;"></ul>
+        </div>
+
+        <div id="view-shopping-list" class="card hidden">
+            <h2>Build Shopping List</h2>
+            <div class="dnd-container">
+                <div class="dnd-column" id="col-master" ondragover="allowDrop(event)"
+                    ondrop="drop(event, 'col-master')">
+                    <h3>Master List</h3>
+                </div>
+                <div class="dnd-column" id="col-shopping" ondragover="allowDrop(event)"
+                    ondrop="drop(event, 'col-shopping')">
+                    <h3>My Shopping List</h3>
+                </div>
+            </div>
+            <div class="dashboard-buttons" style="margin-top: 20px;">
+                <button class="btn" onclick="exportShoppingPDF()">Export to PDF</button>
+                <button class="btn btn-secondary" onclick="openEmailModal('Shopping List')">Email to Me</button>
+            </div>
+        </div>
+
+        <div id="view-weekly-menu" class="card hidden">
+            <div id="pdf-menu-container">
+                <h2 style="display:none;" class="pdf-only-title">What's for dinner?! - Weekly Menu</h2>
+                <h2>Weekly Menu Planner</h2>
+                <div class="week-nav-bar">
+                    <button onclick="changeWeek(-1)">&#8592;</button>
+                    <h3 id="week-display">Loading Dates...</h3>
+                    <button onclick="changeWeek(1)">&#8594;</button>
+                </div>
+                <div class="day-row"><label>Monday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Tuesday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Wednesday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Thursday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Friday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Saturday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+                <div class="day-row"><label>Sunday</label><input type="text" class="form-input" style="margin-bottom:0;">
+                </div>
+            </div>
+            <div class="dashboard-buttons" style="margin-top: 20px;">
+                <button class="btn" onclick="exportMenuPDF()">Export to PDF</button>
+                <button class="btn btn-secondary" onclick="openEmailModal('Weekly Menu')">Email to Me</button>
+            </div>
+        </div>
+
+        <div id="view-system" class="card hidden">
+            <h2>System & Settings</h2>
+
+            <div class="sub-card">
+                <h3>My Password</h3>
+                <input type="password" id="my-new-pass" class="form-input" placeholder="New Password">
+                <input type="password" id="my-confirm-pass" class="form-input" placeholder="Confirm New Password">
+                <button class="btn" onclick="changeMyPassword()">Update My Password</button>
+            </div>
+
+            <div class="sub-card">
+                <h3>Manage Email Addresses</h3>
+                <input type="email" id="new-email-input" class="form-input" placeholder="Enter email address...">
+                <button class="btn" onclick="addEmail()">Add Email</button>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                <div id="email-list-container"></div>
+            </div>
+
+            <div class="sub-card" id="admin-user-management" style="display:none;">
+                <h3>User Management</h3>
+                <p style="font-size:0.9rem; color:gray;">Add, delete, or manually reset user passwords.</p>
+                <div class="row-buttons">
+                    <input type="text" id="admin-new-user" class="form-input" placeholder="New Username" style="margin-bottom: 0;">
+                    <input type="password" id="admin-new-pass" class="form-input" placeholder="Temp Password" style="margin-bottom: 0;">
+                    <button class="btn" onclick="addSystemUser()" style="margin-bottom: 0;">Add User</button>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                <div id="admin-user-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let masterItems = [];
+        let savedEmails = ["myemail@example.com"];
+        let currentWeekOffset = 0;
+        let currentEmailPayload = "";
+
+        // --- Custom App Dialog System ---
+        function showModalDialog({ title, message, type = 'alert', defaultValue = '' }) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('custom-dialog-modal');
+                const titleEl = document.getElementById('dialog-title');
+                const msgEl = document.getElementById('dialog-message');
+                const inputEl = document.getElementById('dialog-input');
+                const cancelBtn = document.getElementById('dialog-cancel');
+                const confirmBtn = document.getElementById('dialog-confirm');
+
+                titleEl.textContent = title; msgEl.textContent = message;
+                inputEl.classList.add('hidden'); cancelBtn.classList.add('hidden');
+                inputEl.value = defaultValue;
+
+                if (type === 'prompt') { inputEl.classList.remove('hidden'); cancelBtn.classList.remove('hidden'); setTimeout(() => inputEl.focus(), 100); } 
+                else if (type === 'confirm') { cancelBtn.classList.remove('hidden'); }
+
+                overlay.classList.remove('hidden');
+
+                const cleanup = () => { overlay.classList.add('hidden'); confirmBtn.onclick = null; cancelBtn.onclick = null; };
+
+                confirmBtn.onclick = () => { cleanup(); resolve(type === 'prompt' ? inputEl.value : true); };
+                cancelBtn.onclick = () => { cleanup(); resolve(type === 'prompt' ? null : false); };
+            });
+        }
+        const appAlert = (msg, title="Notification") => showModalDialog({ title, message: msg, type: 'alert' });
+        const appConfirm = (msg, title="Confirm Action") => showModalDialog({ title, message: msg, type: 'confirm' });
+        const appPrompt = (msg, def="", title="Input Required") => showModalDialog({ title, message: msg, type: 'prompt', defaultValue: def });
+
+        // --- Authentication ---
+        async function login() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            try {
+                const res = await fetch('api.php?action=login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass }) });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    document.getElementById('view-login').classList.add('hidden');
+                    document.getElementById('app-header').style.display = 'block';
+                    if (result.is_admin == 1) { document.getElementById('admin-user-management').style.display = 'block'; loadSystemUsers(); }
+                    fetchMasterList(); renderWeekNav(); renderEmailList(); navigateTo('dashboard');
+                } else { document.getElementById('login-error').style.display = 'block'; }
+            } catch (err) { await appAlert('Server error during login.'); }
+        }
+
+        async function logout() { await fetch('api.php?action=logout'); location.reload(); }
+
+        // --- System User Management ---
+        async function changeMyPassword() {
+            const pass1 = document.getElementById('my-new-pass').value;
+            const pass2 = document.getElementById('my-confirm-pass').value;
+            if (pass1 !== pass2) { await appAlert('Passwords do not match!'); return; }
+            if (pass1.length < 5) { await appAlert('Password too short.'); return; }
+            
+            const res = await fetch('api.php?action=change_password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_password: pass1 }) });
+            const data = await res.json();
+            await appAlert(data.message);
+            document.getElementById('my-new-pass').value = ''; document.getElementById('my-confirm-pass').value = '';
+        }
+
+        async function loadSystemUsers() {
+            const res = await fetch('api.php?action=get_users'); const data = await res.json();
+            const list = document.getElementById('admin-user-list'); list.innerHTML = '';
+            if(data.status === 'success') {
+                data.data.forEach(u => {
+                    const isAdminLabel = u.is_admin == 1 ? ' <em style="color:gray;font-size:0.8rem;">(Admin)</em>' : '';
+                    list.innerHTML += `<div class="list-item"><span><strong>${u.username}</strong>${isAdminLabel}</span>
+                        <div class="action-btns">
+                            <button class="btn btn-secondary" onclick="resetSystemUser(${u.id}, '${u.username}')" title="Reset Password">
+                                <svg class="action-icon" viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.22 0 4.14-1.22 5.19-3h2.81v3h3v-3h1.35V10h-6.7zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+                                <span class="hide-mobile">Reset</span>
+                            </button>
+                            ${u.is_admin != 1 ? `<button class="btn btn-danger" onclick="deleteSystemUser(${u.id})" title="Delete User">
+                                <svg class="action-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                <span class="hide-mobile">Delete</span>
+                            </button>` : ''}
+                        </div></div>`;
+                });
+            }
+        }
+
+        async function addSystemUser() {
+            const user = document.getElementById('admin-new-user').value.trim(); const pass = document.getElementById('admin-new-pass').value;
+            if(!user || !pass) { await appAlert('Both fields required.'); return; }
+            
+            const res = await fetch('api.php?action=add_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass }) });
+            const data = await res.json();
+            await appAlert(data.message);
+            if(data.status === 'success') { document.getElementById('admin-new-user').value = ''; document.getElementById('admin-new-pass').value = ''; loadSystemUsers(); }
+        }
+
+        async function deleteSystemUser(id) {
+            if(!(await appConfirm("Are you sure you want to delete this user?"))) return;
+            const res = await fetch('api.php?action=delete_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+            const data = await res.json();
+            if(data.status === 'success') loadSystemUsers(); else await appAlert(data.message);
+        }
+
+        async function resetSystemUser(id, username) {
+            const newPass = await appPrompt(`Enter new password for ${username}:`);
+            if(!newPass) return;
+            const res = await fetch('api.php?action=reset_user_password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, new_password: newPass }) });
+            const data = await res.json();
+            await appAlert(data.message);
+        }
+
+        // --- Master List Data & Management ---
+        async function fetchMasterList() {
+            const res = await fetch('api.php?action=get_master_list'); const data = await res.json();
+            if(data.status === 'success') { masterItems = data.data; renderMasterList(); initDragAndDrop(); }
+        }
+        
+        async function addMasterItem() {
+            const val = document.getElementById('master-input').value.trim();
+            if(val && !masterItems.includes(val)) { 
+                masterItems.push(val); masterItems.sort((a, b) => a.localeCompare(b)); document.getElementById('master-input').value = ''; renderMasterList(); initDragAndDrop();
+                await fetch('api.php?action=add_master_item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_name: val }) });
+            }
+        }
+
+        async function editMasterItem(oldName) {
+            const newName = await appPrompt("Edit item name:", oldName);
+            if (!newName || newName.trim() === "" || newName === oldName) return;
+            const val = newName.trim();
+            if (masterItems.includes(val)) { await appAlert("Item already exists!"); return; }
+            
+            masterItems[masterItems.indexOf(oldName)] = val; masterItems.sort((a, b) => a.localeCompare(b)); renderMasterList(); initDragAndDrop();
+            await fetch('api.php?action=edit_master_item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ old_name: oldName, new_name: val }) });
+        }
+
+        async function deleteMasterItem(itemName) {
+            if (!(await appConfirm(`Are you sure you want to delete ${itemName}?`))) return;
+            masterItems = masterItems.filter(i => i !== itemName); renderMasterList(); initDragAndDrop();
+            await fetch('api.php?action=delete_master_item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_name: itemName }) });
+        }
+
+        function renderMasterList() {
+            const ul = document.getElementById('master-ul'); ul.innerHTML = '';
+            const text = document.getElementById('master-input') ? document.getElementById('master-input').value.toLowerCase() : '';
+            masterItems.filter(i => i.toLowerCase().includes(text)).forEach(item => { 
+                const safeItemStr = item.replace(/'/g, "\\'");
+                ul.innerHTML += `
+                <li class="list-item">
+                    <span>${item}</span>
+                    <div class="action-btns">
+                        <button class="btn btn-secondary" onclick="editMasterItem('${safeItemStr}')" title="Edit">
+                            <svg class="action-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            <span class="hide-mobile">Edit</span>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteMasterItem('${safeItemStr}')" title="Delete">
+                            <svg class="action-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            <span class="hide-mobile">Delete</span>
+                        </button>
+                    </div>
+                </li>`; 
+            });
+        }
+        function filterMasterList() { renderMasterList(); }
+
+        // --- Drag and Drop (with Mobile Button Overrides) ---
+        let draggedItem = null;
+        function initDragAndDrop() {
+            const masterCol = document.getElementById('col-master'); masterCol.innerHTML = '<h3>Master List</h3>';
+            masterItems.forEach(item => {
+                if(!document.querySelector(`#col-shopping [data-item="${item}"]`)) {
+                    const div = document.createElement('div'); div.className = 'draggable-item'; div.draggable = true; div.dataset.item = item;
+                    
+                    div.innerHTML = `
+                        <span style="flex:1; margin-right: 10px;">${item}</span> 
+                        <svg class="desktop-only" viewBox="0 0 24 24" style="width:24px; height:24px; fill:gray;"><path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/></svg>
+                        
+                        <div class="action-btns mobile-only sl-mobile-add">
+                            <button class="btn btn-secondary" onclick="moveItemToShopping(this)">Add to List</button>
+                        </div>
+                        
+                        <div class="action-btns mobile-only sl-mobile-controls">
+                            <button class="btn btn-secondary" onclick="moveItemUp(this)">↑ Up</button>
+                            <button class="btn btn-secondary" onclick="moveItemDown(this)">↓ Down</button>
+                            <button class="btn btn-danger" onclick="moveItemToMaster(this)">✕ Remove</button>
+                        </div>
+                    `;
+
+                    div.addEventListener('dragstart', function() { draggedItem = this; setTimeout(() => this.style.display = 'none', 0); });
+                    div.addEventListener('dragend', function() { setTimeout(() => { draggedItem.style.display = 'flex'; draggedItem = null; document.querySelectorAll('.dnd-column').forEach(c => c.classList.remove('drag-over')); }, 0); });
+                    masterCol.appendChild(div);
+                }
+            });
+        }
+        function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        function drop(e, colId) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); e.currentTarget.appendChild(draggedItem); }
+
+        // --- Mobile Button Helpers for the Shopping List ---
+        window.moveItemToShopping = function(btn) {
+            const item = btn.closest('.draggable-item');
+            document.getElementById('col-shopping').appendChild(item);
+        };
+        window.moveItemToMaster = function(btn) {
+            const item = btn.closest('.draggable-item');
+            document.getElementById('col-master').appendChild(item);
+        };
+        window.moveItemUp = function(btn) {
+            const item = btn.closest('.draggable-item');
+            const prev = item.previousElementSibling;
+            if (prev && prev.tagName !== 'H3') {
+                item.parentNode.insertBefore(item, prev);
+            }
+        };
+        window.moveItemDown = function(btn) {
+            const item = btn.closest('.draggable-item');
+            const next = item.nextElementSibling;
+            if (next) {
+                item.parentNode.insertBefore(next, item);
+            }
+        };
+
+        // --- Weekly Calendar ---
+        function getOrdinalSuffix(i) { let j = i%10, k = i%100; if (j==1 && k!=11) return i+"st"; if (j==2 && k!=12) return i+"nd"; if (j==3 && k!=13) return i+"rd"; return i+"th"; }
+        function formatDateRange(date) { const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]; return `${days[date.getDay()]} ${getOrdinalSuffix(date.getDate())} ${months[date.getMonth()]}`; }
+        function renderWeekNav() {
+            const today = new Date(); const day = today.getDay() || 7; today.setHours(-24 * (day - 1));
+            today.setDate(today.getDate() + (currentWeekOffset * 7));
+            const monday = new Date(today); const sunday = new Date(today); sunday.setDate(sunday.getDate() + 6);
+            document.getElementById('week-display').innerText = `${formatDateRange(monday)} to \n${formatDateRange(sunday)} ${sunday.getFullYear()}`;
+        }
+        function changeWeek(offset) { currentWeekOffset += offset; renderWeekNav(); }
+
+        // --- Emails ---
+        function renderEmailList() {
+            const container = document.getElementById('email-list-container'); const select = document.getElementById('email-select');
+            container.innerHTML = ''; select.innerHTML = '';
+            savedEmails.forEach((email, index) => {
+                container.innerHTML += `
+                <div class="list-item">
+                    <span>${email}</span>
+                    <div class="action-btns">
+                        <button class="btn btn-danger" onclick="deleteEmail(${index})" title="Delete">
+                            <svg class="action-icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            <span class="hide-mobile">Delete</span>
+                        </button>
+                    </div>
+                </div>`;
+                select.innerHTML += `<option value="${email}">${email}</option>`;
+            });
+        }
+        function addEmail() { const val = document.getElementById('new-email-input').value.trim(); if(val && !savedEmails.includes(val)) { savedEmails.push(val); document.getElementById('new-email-input').value = ''; renderEmailList(); } }
+        function deleteEmail(index) { savedEmails.splice(index, 1); renderEmailList(); }
+        function openEmailModal(payloadType) { currentEmailPayload = payloadType; document.getElementById('email-modal').classList.remove('hidden'); }
+        function closeEmailModal() { document.getElementById('email-modal').classList.add('hidden'); }
+        
+        async function sendEmail() {
+            const email = document.getElementById('email-select').value;
+            let textContent = "";
+            if (currentEmailPayload === 'Shopping List') {
+                const items = document.querySelectorAll('#col-shopping .draggable-item span');
+                if(items.length === 0) { await appAlert("Your list is empty."); closeEmailModal(); return; }
+                items.forEach(i => textContent += "- [ ] " + i.innerText + "\n");
+            } else { textContent = "Your weekly menu is attached."; }
+            try {
+                const res = await fetch('api.php?action=send_email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, type: currentEmailPayload, content: textContent }) });
+                const result = await res.json(); await appAlert(result.message);
+            } catch (err) { await appAlert("Failed to connect to the server."); }
+            closeEmailModal();
+        }
+
+        // --- PDF Exports ---
+        async function exportShoppingPDF() {
+            const items = document.querySelectorAll('#col-shopping .draggable-item span');
+            if(items.length === 0) { await appAlert("Your shopping list is empty!"); return; }
+            let html = `<div style="padding: 30px; font-family: Arial, sans-serif; color: black; background: white;"><h2 style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">Shopping List - ${new Date().toLocaleDateString('en-GB')}</h2>`;
+            items.forEach(item => { html += `<div style="display: flex; align-items: center; margin-bottom: 12px; font-size: 18px;"><div style="width: 20px; height: 20px; border: 2px solid black; margin-right: 15px; border-radius: 3px;"></div>${item.innerText}</div>`; });
+            html += `</div>`;
+            const tempDiv = document.createElement('div'); tempDiv.innerHTML = html;
+            html2pdf().set({ margin: 0.5, filename: `Shopping_List.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(tempDiv).save();
+        }
+
+        function exportMenuPDF() {
+            const el = document.getElementById('pdf-menu-container');
+            el.querySelector('.pdf-only-title').style.display = 'block';
+            html2pdf().set({ margin: 0.5, filename: `Weekly_Menu.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(el).save().then(() => el.querySelector('.pdf-only-title').style.display = 'none');
+        }
+
+        // --- UI Globals ---
+        function navigateTo(viewId) { document.querySelectorAll('#app-content > div:not(#view-login)').forEach(v => v.classList.add('hidden')); document.getElementById('view-' + viewId).classList.remove('hidden'); }
+        function changeTextSize(step) { let size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font-size')) + (step * 2); document.documentElement.style.setProperty('--base-font-size', `${Math.max(12, Math.min(size, 24))}px`); }
+        
+        function toggleTheme() {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle');
+            
+            if (body.hasAttribute('data-theme')) {
+                body.removeAttribute('data-theme');
+                toggleBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                toggleBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8 8h-2v3h2v-3zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41-1.79 1.8zM12 5.5c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5 6.5-2.91 6.5-6.5-2.91-6.5-6.5-6.5zm0 11c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5z"/></svg>';
+            }
+        }
+    </script>
+</body>
+
+</html>

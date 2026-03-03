@@ -1,0 +1,17 @@
+{
+    "name": "What's for dinner?!",
+    "short_name": "Dinner?!",
+    "description": "Meal planner and shopping list manager",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f4f4f9",
+    "theme_color": "#2c3e50",
+    "icons": [
+        {
+            "src": "wfd.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
